@@ -2,9 +2,28 @@
 {
     public static class DistGenerator
     {
+        #region Private Fields
+
+        static DistGenerator() => SetSeedFromSystemTime();
         private static uint m_w;
         private static uint m_z;
+
+        #endregion
+
         public static int GetPoisson(double lambda) => lambda < 30.0 ? PoissonSmall(lambda) : PoissonLarge(lambda);
+
+        // Produce a uniform random sample from the open interval (0, 1).
+        // The method will not return either end point.
+        public static double GetUniform()
+        {
+            // 0 <= u < 2^32
+            uint u = GetUint();
+            // The magic number below is 1/(2^32 + 2).
+            // The result is strictly between 0 and 1.
+            return (u + 1.0) * 2.328306435454494e-10;
+        }
+
+        #region Private Methods
 
         private static int PoissonSmall(double lambda)
         {
@@ -319,25 +338,29 @@
             }
         }
 
-        // Produce a uniform random sample from the open interval (0, 1).
-        // The method will not return either end point.
-        public static double GetUniform()
-        {
-          // 0 <= u < 2^32
-            uint u = GetUint();
-            // The magic number below is 1/(2^32 + 2).
-            // The result is strictly between 0 and 1.
-            return (u + 1.0) * 2.328306435454494e-10;
-        }
-
         // This is the heart of the generator.
-       // It uses George Marsaglia's MWC algorithm to produce an unsigned integer.
+        // It uses George Marsaglia's MWC algorithm to produce an unsigned integer.
         // See http://www.bobwheeler.com/statistics/Password/MarsagliaPost.txt
-       private static uint GetUint()
-       {
+        private static uint GetUint()
+        {
             m_z = 36969 * (m_z & 65535) + (m_z >> 16);
             m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-           return (m_z << 16) + m_w;
-       }
+            return (m_z << 16) + m_w;
+        }
+
+        private static void SetSeedFromSystemTime()
+        {
+            System.DateTime dt = System.DateTime.Now;
+            long x = dt.ToFileTime();
+            SetSeed((uint)(x >> 16), (uint)(x % 4294967296));
+        }
+
+        private static void SetSeed(uint u, uint v)
+        {
+            if (u != 0) m_w = u;
+            if (v != 0) m_z = v;
+        }
+
+        #endregion
     }
 }
