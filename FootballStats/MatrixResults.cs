@@ -23,6 +23,7 @@ namespace FootballStats
         public override string ToString()
         {
             var s = new StringBuilder();
+            s.AppendLine($"    {string.Join(" ", Enumerable.Range(0, _size).Select(x => $"   [{x}]   "))}");
             for (var i = 0; i < _size; i++)
             {
                 s.Append($"[{i}]");
