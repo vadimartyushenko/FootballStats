@@ -2,7 +2,7 @@
   "profiles": {
     "FootballStats": {
       "commandName": "Project",
-      "commandLineArgs": "-file:D:\\repos\\my_repos\\FootballStats\\Stats.csv -interval:30 -monte-carlo:100000"
+      "commandLineArgs": "-file:D:\\repos\\my_repos\\FootballStats\\Stats.csv -interval:30 -monte-carlo:100000 -goal-sequence:HHAH"
     }
   }
 }
