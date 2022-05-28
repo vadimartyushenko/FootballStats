@@ -50,6 +50,5 @@ namespace FootballStats
             AverageHome = averHome;
             AverageAway = averAway;
         }
-
     }
 }

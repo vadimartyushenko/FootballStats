@@ -34,5 +34,17 @@ namespace FootballStats
             return s.ToString();
         }
 
+        public double Draw() => Calc((i, j) => i == j);
+        public double HomeWin() => Calc((i, j) => i > j);
+        public double AwayWin() => Calc((i, j) => i < j);
+        private double Calc(Func<int, int, bool> condition)
+        {
+            var sum = 0.0;
+            for (var i = 0; i < _size; i++)
+                for (var j = 0; j < _size; j++)
+                    if (condition(i, j))
+                        sum += _probs[i, j];
+            return sum;
+        }
     }
 }
