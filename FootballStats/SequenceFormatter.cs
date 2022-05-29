@@ -1,8 +1,12 @@
-﻿namespace FootballStats
+﻿using System.Collections;
+using System.Text;
+
+namespace FootballStats
 {
     public static class SequenceFormatter
     {
-        public static List<int> Format(string goals)
+        const int MaxSize = 7;
+        public static List<int> FormatFromInput(string goals)
         {
             var result = new List<int>();
             foreach (var goal in goals) {
@@ -14,6 +18,15 @@
                 result.Add(item);
             }
             return result;
+        }
+
+        public static void PrintAllResultsTable(IEnumerable<List<int>> results)
+        {
+            Console.WriteLine("\n* RESULTS TABLE *\n");
+            foreach (var result in results) {
+                var str = string.Join(" - ", result.Select(x => x == 1 ? "H" : "A"));
+                Console.WriteLine(" " + str);
+            }
         }
     }
 }
