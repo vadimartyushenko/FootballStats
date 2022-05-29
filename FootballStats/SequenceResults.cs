@@ -9,28 +9,31 @@ namespace FootballStats
         public List<int> FixedResults { get; private set; }
         public List<List<int>> AllResults { get; private set;}
         public List<IntervalResult> IntervalResults { get; private set; }
+        public int HomeFixedScore { get; private set; } = 0;
+        public int AwayFixedScore { get; private set; } = 0;
         public SequenceResults(int size, List<int> fixedResults)
         {
             MaxSize = size;
             FixedResults = fixedResults;
         }
 
-        public void Calc(int? min, int? max)
+        public void Calc(int? min, int? max, double averageHome, double averageAway)
         {
-            //not used yet
-            var homeMax = FixedResults.Count(x => x == 1);
-            var awayMax = FixedResults.Count(x => x == 0);
-
             AllResults = new List<List<int>> {
                 FixedResults
             };
 
             if (min.HasValue && max.HasValue) {
                 IntervalResults = new List<IntervalResult>();
-                AddIntervalResult(FixedResults, min.Value, max.Value);
+                if (FixedResults.Count >= min) {
+                    var fixedResult = FixedResults.ToArray();
+                    HomeFixedScore = fixedResult[(min.Value - 1)..].Count(x => x == 1);
+                    AwayFixedScore = fixedResult[(min.Value - 1)..].Count(x => x == 0);
+                }
+                AddIntervalResult(FixedResults, min.Value, max.Value, averageHome, averageAway);
             }
             
-            void AddIntervalResult(List<int> item, int min, int max)
+            void AddIntervalResult(List<int> item, int min, int max, double homeAv, double awayAv)
             {
                 var intervalRes = new List<int>();
                 var width = max - min + 1;
@@ -49,8 +52,12 @@ namespace FootballStats
                     HomeScore = intervalRes.Count(x => x == 1),
                     AwayScore = intervalRes.Count(y => y == 0)
                 };
-                if (!IntervalResults.Contains(result))
+
+                if (!IntervalResults.Contains(result)) {
+                    result.Probability = PoissonDistribution.PMF(result.HomeScore - HomeFixedScore, homeAv) 
+                        * PoissonDistribution.PMF(result.AwayScore - AwayFixedScore, awayAv);
                     IntervalResults.Add(result);
+                }
             }
 
             for (var i = 1; i < MaxSize; i++) {
@@ -58,10 +65,28 @@ namespace FootballStats
                 foreach (var item in combos) {
                     item.InsertRange(0, FixedResults);
                     if (min.HasValue && max.HasValue && max.Value > FixedResults.Count)
-                        AddIntervalResult(item, min.Value, max.Value);
+                        AddIntervalResult(item, min.Value, max.Value, averageHome, averageAway);
                 }
                 AllResults.AddRange(combos);
             }
+        }
+
+        public double HomeIntervalWin() => GetProbSum((i, j) => i > j);
+
+        public double AwayIntervalWin() => GetProbSum((i, j) => i < j);
+
+        public double IntervalDraw() => GetProbSum((i, j) => i == j);
+
+        public double NotClosedInterval()
+        {
+            var uniqScore = new Dictionary<string, double>();
+            if (IntervalResults != null)
+                foreach (var item in IntervalResults.Where(x => x.GoalSequence.Contains(-1))) {
+                    var score = string.Join(':', new int[] { item.HomeScore - HomeFixedScore, item.AwayScore - AwayFixedScore });
+                    if (!uniqScore.ContainsKey(score))
+                        uniqScore.Add(score, item.Probability);
+                }
+            return uniqScore.Any() ? uniqScore.Values.Sum() : 0.0;
         }
 
         public void PrintIntervalResults()
@@ -70,7 +95,7 @@ namespace FootballStats
                 return;
             Console.WriteLine("\n* INTERVAL RESULTS TABLE *\n");
             //headers
-            Console.WriteLine($"{"Goal Sequence", -30}\t{"Score", 5}\t{"Result", 10}");
+            Console.WriteLine($"{"Goal Sequence", -30}\t{"Score", 5}\t{"Result", 10}\t{"Probability", 10}");
             foreach (var item in IntervalResults) {
                 var sb = new StringBuilder();
                 foreach (var goal in item.GoalSequence) {
@@ -85,7 +110,7 @@ namespace FootballStats
 
                 string result;
                 if (item.GoalSequence.Contains(-1))
-                    result = "Interval not completed";
+                    result = "Not compl.";
                 else if (item.HomeScore > item.AwayScore)
                     result = "Home Win";
                 else if (item.HomeScore < item.AwayScore)
@@ -93,10 +118,23 @@ namespace FootballStats
                 else
                     result = "Draw";
 
-                Console.WriteLine($"{sb}\t{item.HomeScore, 2}:{item.AwayScore, -2}\t{result, 10}");
+                Console.WriteLine($"{sb}\t{item.HomeScore, 2}:{item.AwayScore, -2}\t{result, 10}\t {item.Probability:F5}");
             }
         }
+
         #region Help Methods
+
+        private double GetProbSum(Func<int, int, bool> condition)
+        {
+            var uniqScore = new Dictionary<string, double>();
+            if (IntervalResults != null)
+                foreach (var item in IntervalResults.Where(x => !x.GoalSequence.Contains(-1))) {
+                    var score = string.Join(':', new int[] { item.HomeScore - HomeFixedScore, item.AwayScore - AwayFixedScore });
+                    if(!uniqScore.ContainsKey(score) && condition(item.HomeScore, item.AwayScore))
+                        uniqScore.Add(score, item.Probability);
+                }
+            return uniqScore.Any() ? uniqScore.Values.Sum() : 0.0;
+        }
         public static List<List<int>> GetAllCombo(int length)
         {
             var result = new List<List<int>>();
@@ -133,7 +171,7 @@ namespace FootballStats
         public List<int> GoalSequence { get; set;}
         public int HomeScore { get; set;}
         public int AwayScore { get; set;}
-
+        public double Probability { get; set;}
         public override bool Equals(object obj)
         {
             if (obj is null || obj is not IntervalResult) return false;

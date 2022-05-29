@@ -54,11 +54,6 @@ if (sequenceArg != null) {
         return;
     }
 }
-
-results.Calc(minGoals, maxGoals);
-SequenceFormatter.PrintAllResultsTable(results.AllResults);
-results.PrintIntervalResults();
-
 var stats = new Statistics();
 stats.Load(path);
 stats.CalcAverage();
@@ -66,9 +61,19 @@ Console.WriteLine("\n* STATS FROM FILE *\n");
 Console.WriteLine($"For Home team average scores - {stats.AverageHome}");
 Console.WriteLine($"For Away team average scores - {stats.AverageAway}");
 
+var remainPart = interval / 90.0;
+results.Calc(minGoals, maxGoals, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
+SequenceFormatter.PrintAllResultsTable(results.AllResults);
+results.PrintIntervalResults();
+
+Console.WriteLine("\n* INTERVAL PROBABILITY *\n");
+Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin():F5}");
+Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin():F5}");
+Console.WriteLine($"Draw interval probability = {results.IntervalDraw():F5}");
+Console.WriteLine($"Not closed interval probability = {results.NotClosedInterval():F5}");
+
 
 Console.WriteLine("\n* ALL PROBABILITY MATRIX *\n");
-var remainPart = interval / 90.0;
 var probs = new MatrixResults(7, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
 Console.WriteLine(probs);
 
