@@ -4,9 +4,9 @@ namespace FootballStats
 {
     public class SequenceResults
     {
-        public readonly int MaxSize;
+        private readonly int MaxSize;
         
-        public List<int> FixedResults { get; private set; }
+        public List<int> FixedResults { get; }
         public List<List<int>> AllResults { get; private set;}
         public List<IntervalResult> IntervalResults { get; private set; }
         public int HomeFixedScore { get; private set; } = 0;
@@ -95,7 +95,7 @@ namespace FootballStats
                 return;
             Console.WriteLine("\n* INTERVAL RESULTS TABLE *\n");
             //headers
-            Console.WriteLine($"{"Goal Sequence", -30}\t{"Score", 5}\t{"Result", 10}\t{"Probability", 10}");
+            Console.WriteLine($"{"Goal Sequence", -20}\t{"Score", 5}\t{"Result", 10}\t{"Probability", 10}");
             foreach (var item in IntervalResults) {
                 var sb = new StringBuilder();
                 foreach (var goal in item.GoalSequence) {

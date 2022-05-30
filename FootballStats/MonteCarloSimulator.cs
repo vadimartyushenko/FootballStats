@@ -43,6 +43,37 @@
                 DrawProbability = (double) count_draws / NIteration
             };
         }
+
+        public double Run(int max, int min, List<int> fixedResult, Func<int, int, bool> condition, bool log)
+        {
+            var homeFixedScore = 0;
+            var awayFixedScore = 0;
+            if (fixedResult.Count >= min) {
+                var fixedResultArray = fixedResult.ToArray();
+                homeFixedScore = fixedResultArray[(min - 1)..].Count(x => x == 1);
+                awayFixedScore = fixedResultArray[(min - 1)..].Count(x => x == 0);
+            }
+
+            var needToCLose = max - min + 1 - (homeFixedScore + awayFixedScore);
+            var count = 0;
+
+            for (var i = 0; i < NIteration; i++) {
+                var home_goals_scored = DistGenerator.GetPoisson(HomeAverage);
+                var away_goals_scored = DistGenerator.GetPoisson(AwayAverage);
+
+                if (home_goals_scored + away_goals_scored != needToCLose)
+                    continue;
+                if (condition(home_goals_scored + homeFixedScore, away_goals_scored + awayFixedScore))
+                {
+                    count++;
+                    if (log)
+                        Console.WriteLine($"#{i}: Home {home_goals_scored + homeFixedScore}:{away_goals_scored + awayFixedScore} Away");
+                }
+            }
+
+            return (double)count / NIteration;
+        }
+
         public struct SimulationResults
         {
             public double HomeWinProbability { get; init; }

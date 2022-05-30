@@ -31,25 +31,26 @@ if (monteCarlo != null)
 
 var sequenceArg = args.FirstOrDefault(x => x.StartsWith("-goal-sequence"));
 SequenceResults results = null;
+var sequenceStr = string.Empty;
 int? minGoals = null;
 int? maxGoals = null;
 if (sequenceArg != null) {
-    var sequenceStr = sequenceArg.Split(new[] { ':' }, 2)[1];
+    sequenceStr = sequenceArg.Split(new[] { ':' }, 2)[1];
     results = new SequenceResults(7, SequenceFormatter.FormatFromInput(sequenceStr));
     
     var minArg = args.FirstOrDefault(x => x.StartsWith("-min"));
     var maxArg = args.FirstOrDefault(x => x.StartsWith("-max"));
     minGoals = minArg != null ? int.Parse(minArg.Split(new[] { ':' }, 2)[1]) : null;
     maxGoals = maxArg != null ? int.Parse(maxArg.Split(new[] { ':' }, 2)[1]) : null;
-    if (minGoals.HasValue && minGoals < 1) {
+    if (minGoals is < 1) {
         Console.WriteLine("Args \"min\" must be: min >= 1");
         return;
     }
-    if (maxGoals.HasValue && maxGoals < 2) {
+    if (maxGoals is < 2) {
         Console.WriteLine("Args \"max\" must be: max > 1");
         return;
     }
-    if (minGoals.HasValue && maxGoals.HasValue && maxGoals <= minGoals) {
+    if (maxGoals <= minGoals) {
         Console.WriteLine("Args \"min\" and \"max\" must be: min < max");
         return;
     }
@@ -62,16 +63,18 @@ Console.WriteLine($"For Home team average scores - {stats.AverageHome}");
 Console.WriteLine($"For Away team average scores - {stats.AverageAway}");
 
 var remainPart = interval / 90.0;
-results.Calc(minGoals, maxGoals, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
-SequenceFormatter.PrintAllResultsTable(results.AllResults);
-results.PrintIntervalResults();
+if (results != null && maxGoals.HasValue && minGoals.HasValue)
+{
+    results.Calc(minGoals, maxGoals, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
+    SequenceFormatter.PrintAllResultsTable(results.AllResults);
+    results.PrintIntervalResults();
 
-Console.WriteLine("\n* INTERVAL PROBABILITY *\n");
-Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin():F5}");
-Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin():F5}");
-Console.WriteLine($"Draw interval probability = {results.IntervalDraw():F5}");
-Console.WriteLine($"Not closed interval probability = {results.NotClosedInterval():F5}");
-
+    Console.WriteLine("\n* INTERVAL PROBABILITY *\n");
+    Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin():F5}");
+    Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin():F5}");
+    Console.WriteLine($"Draw interval probability = {results.IntervalDraw():F5}");
+    Console.WriteLine($"Not closed interval probability = {results.NotClosedInterval():F5}");
+}
 
 Console.WriteLine("\n* ALL PROBABILITY MATRIX *\n");
 var probs = new MatrixResults(7, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
@@ -89,4 +92,12 @@ if (needSim) {
 
     Console.WriteLine("\n* SIM STATS *\n");
     Console.WriteLine($"Home win - {simResults.HomeWinProbability:F5}, away win - {simResults.AwayWinProbability:F5}, draw - {simResults.DrawProbability:F5}");
+
+    if (results != null && maxGoals.HasValue && minGoals.HasValue)
+    {
+        Console.WriteLine("\n* SIM INTERVAL STATS *\n");
+        //home win probability
+        var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), (i, j) => (i > j), false);
+        Console.WriteLine($"Home interval win probability - {probability:F5}");
+    }
 }

@@ -2,7 +2,7 @@
   "profiles": {
     "FootballStats": {
       "commandName": "Project",
-      "commandLineArgs": "-file:C:\\Users\\VADIM_ART\\RiderProjects\\FootballStats\\Stats.csv -interval:30 -monte-carlo:100000 -goal-sequence:AH -min:2 -max:7"
+      "commandLineArgs": "-file:C:\\Users\\2\\source\\repos\\FootballStats\\Stats.csv -interval:30 -monte-carlo:100000 -goal-sequence:HHA -min:2 -max:5 "
     }
   }
 }
