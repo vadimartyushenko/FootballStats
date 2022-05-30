@@ -33,12 +33,12 @@ namespace FootballStats
                 AddIntervalResult(FixedResults, min.Value, max.Value, averageHome, averageAway);
             }
             
-            void AddIntervalResult(List<int> item, int min, int max, double homeAv, double awayAv)
+            void AddIntervalResult(List<int> item, int minGoals, int maxGoals, double homeAv, double awayAv)
             {
                 var intervalRes = new List<int>();
-                var width = max - min + 1;
-                var startId = item.Count >= min ? min - 1 : -1;
-                var endId = item.Count >= max ? max : item.Count;
+                var width = maxGoals - minGoals + 1;
+                var startId = item.Count >= minGoals ? minGoals - 1 : -1;
+                var endId = item.Count >= maxGoals ? maxGoals : item.Count;
                 if (startId < 0)
                     intervalRes = Enumerable.Repeat(-1, width).ToList();
                 else {
@@ -53,11 +53,10 @@ namespace FootballStats
                     AwayScore = intervalRes.Count(y => y == 0)
                 };
 
-                if (!IntervalResults.Contains(result)) {
-                    result.Probability = PoissonDistribution.PMF(result.HomeScore - HomeFixedScore, homeAv) 
-                        * PoissonDistribution.PMF(result.AwayScore - AwayFixedScore, awayAv);
-                    IntervalResults.Add(result);
-                }
+                if (IntervalResults.Contains(result)) 
+                    return;
+                result.Probability = PoissonDistribution.PMF(result.HomeScore - HomeFixedScore, homeAv) * PoissonDistribution.PMF(result.AwayScore - AwayFixedScore, awayAv);
+                IntervalResults.Add(result);
             }
 
             for (var i = 1; i < MaxSize; i++) {
@@ -168,24 +167,19 @@ namespace FootballStats
 
     public class IntervalResult
     {
-        public List<int> GoalSequence { get; set;}
-        public int HomeScore { get; set;}
-        public int AwayScore { get; set;}
+        public List<int> GoalSequence { get; init;}
+        public int HomeScore { get; init;}
+        public int AwayScore { get; init;}
         public double Probability { get; set;}
         public override bool Equals(object obj)
         {
-            if (obj is null || obj is not IntervalResult) return false;
-            IntervalResult other = (IntervalResult)obj;
-            if (other.GoalSequence.Count != this.GoalSequence.Count)
+            if (obj is null or not IntervalResult) 
                 return false;
-            if (!other.GoalSequence.SequenceEqual(this.GoalSequence))
-                return false;
-            return true;
+            
+            var other = (IntervalResult)obj;
+            return other.GoalSequence.Count == GoalSequence.Count && other.GoalSequence.SequenceEqual(GoalSequence);
         }
 
-        public override int GetHashCode()
-        {
-            return GoalSequence.GetHashCode();
-        }
+        public override int GetHashCode() => GoalSequence.GetHashCode();
     }
 }
