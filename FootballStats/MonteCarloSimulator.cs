@@ -56,6 +56,7 @@
 
             var needToCLose = max - min + 1 - (homeFixedScore + awayFixedScore);
             var count = 0;
+            var validIterCount  = 0;
 
             for (var i = 0; i < NIteration; i++) {
                 var home_goals_scored = DistGenerator.GetPoisson(HomeAverage);
@@ -63,15 +64,43 @@
 
                 if (home_goals_scored + away_goals_scored != needToCLose)
                     continue;
+                validIterCount++;
                 if (condition(home_goals_scored + homeFixedScore, away_goals_scored + awayFixedScore))
                 {
                     count++;
+                    if (log)
+                        Console.WriteLine($"#{validIterCount}: Home {home_goals_scored + homeFixedScore}:{away_goals_scored + awayFixedScore} Away");
+                }
+            }
+
+            return (double)count / validIterCount;
+        }
+
+        public double Run(int max, int min, List<int> fixedResult, bool log)
+        {
+            var homeFixedScore = 0;
+            var awayFixedScore = 0;
+            if (fixedResult.Count >= min) {
+                var fixedResultArray = fixedResult.ToArray();
+                homeFixedScore = fixedResultArray[(min - 1)..].Count(x => x == 1);
+                awayFixedScore = fixedResultArray[(min - 1)..].Count(x => x == 0);
+            }
+
+            var needToCLose = max - min + 1 - (homeFixedScore + awayFixedScore);
+            var notClosedCount = 0;
+
+            for (var i = 0; i < NIteration; i++) {
+                var home_goals_scored = DistGenerator.GetPoisson(HomeAverage);
+                var away_goals_scored = DistGenerator.GetPoisson(AwayAverage);
+
+                if (home_goals_scored + away_goals_scored < needToCLose) {
+                    notClosedCount++;
                     if (log)
                         Console.WriteLine($"#{i}: Home {home_goals_scored + homeFixedScore}:{away_goals_scored + awayFixedScore} Away");
                 }
             }
 
-            return (double)count / NIteration;
+            return (double)notClosedCount / NIteration;
         }
 
         public struct SimulationResults

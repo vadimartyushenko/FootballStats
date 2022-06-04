@@ -97,7 +97,8 @@ if (needSim) {
     {
         Console.WriteLine("\n* SIM INTERVAL STATS *\n");
         //home win probability
-        var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), (i, j) => (i > j), false);
+        //var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), (i, j) => (i == j), true);
+        var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), true);
         Console.WriteLine($"Home interval win probability - {probability:F5}");
     }
 }
