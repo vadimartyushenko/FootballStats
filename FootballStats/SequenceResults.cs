@@ -43,15 +43,19 @@ namespace FootballStats
                     intervalRes = Enumerable.Repeat(-1, width).ToList();
                 else {
                     var fullRes = item.ToArray();
+
                     intervalRes = fullRes[startId..endId].ToList();
                     if (intervalRes.Count < width)
                         intervalRes.AddRange(Enumerable.Repeat(-1, width - intervalRes.Count).ToList());
                 }
                 var result = new IntervalResult() {
                     GoalSequence = intervalRes,
-                    HomeScore = intervalRes.Count(x => x == 1),
-                    AwayScore = intervalRes.Count(y => y == 0)
+                    FullSequence = item.Skip(FixedResults.Count - (HomeFixedScore + AwayFixedScore)).ToList(),
+                    HomeIntervalScore = intervalRes.Count(x => x == 1),
+                    AwayIntervalScore = intervalRes.Count(y => y == 0),
                 };
+                result.HomeScore = result.FullSequence.Count(x => x == 1);
+                result.AwayScore = result.FullSequence.Count(x => x == 0);
 
                 if (IntervalResults.Contains(result)) 
                     return;
@@ -129,7 +133,7 @@ namespace FootballStats
             if (IntervalResults != null)
                 foreach (var item in IntervalResults.Where(x => !x.GoalSequence.Contains(-1))) {
                     var score = string.Join(':', new int[] { item.HomeScore - HomeFixedScore, item.AwayScore - AwayFixedScore });
-                    if(!uniqScore.ContainsKey(score) && condition(item.HomeScore, item.AwayScore))
+                    if(!uniqScore.ContainsKey(score) && condition(item.HomeIntervalScore, item.AwayIntervalScore))
                         uniqScore.Add(score, item.Probability);
                 }
             return uniqScore.Any() ? uniqScore.Values.Sum() : 0.0;
@@ -168,8 +172,11 @@ namespace FootballStats
     public class IntervalResult
     {
         public List<int> GoalSequence { get; init;}
-        public int HomeScore { get; init;}
-        public int AwayScore { get; init;}
+        public List<int> FullSequence { get; init;}
+        public int HomeScore { get; set;}
+        public int AwayScore { get; set;}
+        public int HomeIntervalScore { get; init; }
+        public int AwayIntervalScore { get; init; }
         public double Probability { get; set;}
         public override bool Equals(object obj)
         {
@@ -177,7 +184,8 @@ namespace FootballStats
                 return false;
             
             var other = (IntervalResult)obj;
-            return other.GoalSequence.Count == GoalSequence.Count && other.GoalSequence.SequenceEqual(GoalSequence);
+            //return other.GoalSequence.Count == GoalSequence.Count && other.GoalSequence.SequenceEqual(GoalSequence);
+            return other.FullSequence.Count == FullSequence.Count && other.GoalSequence.SequenceEqual(FullSequence);
         }
 
         public override int GetHashCode() => GoalSequence.GetHashCode();
