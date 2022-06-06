@@ -59,7 +59,7 @@ namespace FootballStats
 
                 if (IntervalResults.Contains(result)) 
                     return;
-                result.Probability = PoissonDistribution.PMF(result.HomeScore - HomeFixedScore, homeAv) * PoissonDistribution.PMF(result.AwayScore - AwayFixedScore, awayAv);
+                //result.Probability = PoissonDistribution.PMF(result.HomeScore - HomeFixedScore, homeAv) * PoissonDistribution.PMF(result.AwayScore - AwayFixedScore, awayAv);
                 IntervalResults.Add(result);
             }
 
@@ -72,13 +72,27 @@ namespace FootballStats
                 }
                 AllResults.AddRange(combos);
             }
+
+            if (IntervalResults == null) 
+                return;
+            var uniqScore = IntervalResults.Where(x => !x.GoalSequence.Contains(-1)).ToLookup(
+                k => string.Join(':', new int[] {k.HomeScore - HomeFixedScore, k.AwayScore - AwayFixedScore}),
+                v => v.FullSequence);
+
+            foreach (var item in IntervalResults.Where(x => !x.GoalSequence.Contains(-1))) {
+                var score = string.Join(':', new int[] { item.HomeScore - HomeFixedScore, item.AwayScore - AwayFixedScore });
+                item.Probability = PoissonDistribution.PMF(item.HomeScore - HomeFixedScore, averageHome) * PoissonDistribution.PMF(item.AwayScore - AwayFixedScore, averageAway) / uniqScore[score].Count();
+            }
+
+            foreach (var item in IntervalResults.Where(x => x.GoalSequence.Contains(-1)))
+                item.Probability = PoissonDistribution.PMF(item.HomeScore - HomeFixedScore, averageHome) * PoissonDistribution.PMF(item.AwayScore - AwayFixedScore, averageAway);
         }
 
-        public double HomeIntervalWin() => GetProbSum((i, j) => i > j);
+        public (double, Dictionary<string, double>) HomeIntervalWin() => GetProbSum((i, j) => i > j);
 
-        public double AwayIntervalWin() => GetProbSum((i, j) => i < j);
+        public (double, Dictionary<string, double>) AwayIntervalWin() => GetProbSum((i, j) => i < j);
 
-        public double IntervalDraw() => GetProbSum((i, j) => i == j);
+        public (double, Dictionary<string, double>) IntervalDraw() => GetProbSum((i, j) => i == j);
 
         public double NotClosedInterval()
         {
@@ -127,16 +141,24 @@ namespace FootballStats
 
         #region Help Methods
 
-        private double GetProbSum(Func<int, int, bool> condition)
+        private (double, Dictionary<string, double>) GetProbSum(Func<int, int, bool> condition)
         {
-            var uniqScore = new Dictionary<string, double>();
+            var uniqScore = new List<(string, double)>();
+            var result = new Dictionary<string, double>();
             if (IntervalResults != null)
                 foreach (var item in IntervalResults.Where(x => !x.GoalSequence.Contains(-1))) {
                     var score = string.Join(':', new int[] { item.HomeScore - HomeFixedScore, item.AwayScore - AwayFixedScore });
-                    if(!uniqScore.ContainsKey(score) && condition(item.HomeIntervalScore, item.AwayIntervalScore))
-                        uniqScore.Add(score, item.Probability);
+                    if ( /*!uniqScore.ContainsKey(score) && */condition(item.HomeIntervalScore, item.AwayIntervalScore)) {
+                        uniqScore.Add((score, item.Probability));
+                        if (result.ContainsKey(score))
+                            result[score] += item.Probability;
+                        else
+                            result.Add(score, item.Probability);
+                    }
                 }
-            return uniqScore.Any() ? uniqScore.Values.Sum() : 0.0;
+            uniqScore.Sort();
+            var sum = uniqScore.Any() ? uniqScore.Sum(x => x.Item2) : 0.0;
+            return (sum, result);
         }
         public static List<List<int>> GetAllCombo(int length)
         {

@@ -1,5 +1,6 @@
 ﻿using FootballStats;
 
+var allProbabilitySim = false;
 var pathToStatsFile = args.FirstOrDefault(x => x.StartsWith("-file:"));
 if (pathToStatsFile == null) {
     Console.WriteLine("Usage: FootballStats.exe -file:<PATH TO FILE WITH STATS>");
@@ -23,11 +24,11 @@ if (intervalArg != null) {
     }
 }
 
-var nInteration = 10000;
+var nIteration = 10000;
 var needSim = false;
 var monteCarlo = args.FirstOrDefault(x => x.StartsWith("-monte-carlo"));
 if (monteCarlo != null)
-    needSim = int.TryParse(monteCarlo.Split(new[] { ':' }, 2)[1], out nInteration);
+    needSim = int.TryParse(monteCarlo.Split(new[] { ':' }, 2)[1], out nIteration);
 
 var sequenceArg = args.FirstOrDefault(x => x.StartsWith("-goal-sequence"));
 SequenceResults results = null;
@@ -36,7 +37,7 @@ int? minGoals = null;
 int? maxGoals = null;
 if (sequenceArg != null) {
     sequenceStr = sequenceArg.Split(new[] { ':' }, 2)[1];
-    results = new SequenceResults(7, SequenceFormatter.FormatFromInput(sequenceStr));
+    results = new SequenceResults(10, SequenceFormatter.FormatFromInput(sequenceStr));
     
     var minArg = args.FirstOrDefault(x => x.StartsWith("-min"));
     var maxArg = args.FirstOrDefault(x => x.StartsWith("-max"));
@@ -66,39 +67,70 @@ var remainPart = interval / 90.0;
 if (results != null && maxGoals.HasValue && minGoals.HasValue)
 {
     results.Calc(minGoals, maxGoals, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
-    SequenceFormatter.PrintAllResultsTable(results.AllResults);
-    results.PrintIntervalResults();
+    //SequenceFormatter.PrintAllResultsTable(results.AllResults);
+    //results.PrintIntervalResults();
 
     Console.WriteLine("\n* INTERVAL PROBABILITY *\n");
-    Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin():F5}");
-    Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin():F5}");
-    Console.WriteLine($"Draw interval probability = {results.IntervalDraw():F5}");
+    Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin().Item1:F5}");
+    Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin().Item1:F5}");
+    Console.WriteLine($"Draw interval probability = {results.IntervalDraw().Item1:F5}");
     Console.WriteLine($"Not closed interval probability = {results.NotClosedInterval():F5}");
+    Console.WriteLine($"Sum = {results.HomeIntervalWin().Item1 + results.AwayIntervalWin().Item1 + results.IntervalDraw().Item1 + results.NotClosedInterval():F5}");
+    /*var homeWinRes = results.HomeIntervalWin().Item2;
+    var awayWinRes = results.AwayIntervalWin().Item2;
+    var drawRes = results.IntervalDraw().Item2;
+    var allProbs = new Dictionary<string, double>();
+    foreach (var (score, prob) in homeWinRes)
+    {
+        if (!allProbs.ContainsKey(score))
+            allProbs.Add(score, prob);
+        else
+            allProbs[score] += prob;
+    }
+    foreach (var (score, prob) in awayWinRes) {
+        if (!allProbs.ContainsKey(score))
+            allProbs.Add(score, prob);
+        else
+            allProbs[score] += prob;
+    }
+    foreach (var (score, prob) in drawRes) {
+        if (!allProbs.ContainsKey(score))
+            allProbs.Add(score, prob);
+        else
+            allProbs[score] += prob;
+    }
+
+    foreach (var (score, prob) in allProbs)
+        Console.WriteLine($"For {score} - {prob:F5}");*/
 }
 
 Console.WriteLine("\n* ALL PROBABILITY MATRIX *\n");
-var probs = new MatrixResults(7, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
+var probs = new MatrixResults(8, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
 Console.WriteLine(probs);
 
 Console.WriteLine("\n* PMF STATS *\n");
 Console.WriteLine($"Home win probability = {probs.HomeWin()}");
 Console.WriteLine($"Away win probability = {probs.AwayWin()}");
 Console.WriteLine($"Draw probability = {probs.Draw()}");
+Console.WriteLine($"Sum = {probs.Draw() + probs.HomeWin() + probs.AwayWin()}");
 
 if (needSim) {
-    var simulator = new MonteCarloSimulator(nInteration, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
-    simulator.Run(log: false);
-    var simResults = simulator.Results;
+    var simulator = new MonteCarloSimulator(nIteration, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
+    if (allProbabilitySim) {
+        simulator.Run(log: false);
+        var simResults = simulator.Results;
 
-    Console.WriteLine("\n* SIM STATS *\n");
-    Console.WriteLine($"Home win - {simResults.HomeWinProbability:F5}, away win - {simResults.AwayWinProbability:F5}, draw - {simResults.DrawProbability:F5}");
+        Console.WriteLine("\n* SIM STATS *\n");
+        Console.WriteLine(
+            $"Home win - {simResults.HomeWinProbability:F5}, away win - {simResults.AwayWinProbability:F5}, draw - {simResults.DrawProbability:F5}");
+    }
 
     if (results != null && maxGoals.HasValue && minGoals.HasValue)
     {
         Console.WriteLine("\n* SIM INTERVAL STATS *\n");
         //home win probability
-        //var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), (i, j) => (i == j), true);
-        var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), false);
+        var probability = simulator.Run(maxGoals.Value, minGoals.Value, SequenceFormatter.FormatFromInput(sequenceStr), (i, j) => (i > j), false);
+
         Console.WriteLine($"Home interval win probability - {probability:F5}");
     }
 }
