@@ -5,12 +5,12 @@ namespace FootballStats
     public class SequenceResults
     {
         private readonly int MaxSize;
-        
-        public List<int> FixedResults { get; }
-        public List<List<int>> AllResults { get; private set;}
-        public List<IntervalResult> IntervalResults { get; private set; }
-        public int HomeFixedScore { get; private set; } = 0;
-        public int AwayFixedScore { get; private set; } = 0;
+
+        private List<int> FixedResults { get; }
+        private List<List<int>> AllResults { get; set;}
+        private List<IntervalResult> IntervalResults { get; set; }
+        private int HomeFixedScore { get; set; }
+        private int AwayFixedScore { get; set; }
         public SequenceResults(int size, List<int> fixedResults)
         {
             MaxSize = size;
@@ -88,11 +88,11 @@ namespace FootballStats
                 item.Probability = PoissonDistribution.PMF(item.HomeScore - HomeFixedScore, averageHome) * PoissonDistribution.PMF(item.AwayScore - AwayFixedScore, averageAway);
         }
 
-        public (double, Dictionary<string, double>) HomeIntervalWin() => GetProbSum((i, j) => i > j);
+        public double HomeIntervalWin() => GetProbSum((i, j) => i > j);
 
-        public (double, Dictionary<string, double>) AwayIntervalWin() => GetProbSum((i, j) => i < j);
+        public double AwayIntervalWin() => GetProbSum((i, j) => i < j);
 
-        public (double, Dictionary<string, double>) IntervalDraw() => GetProbSum((i, j) => i == j);
+        public double IntervalDraw() => GetProbSum((i, j) => i == j);
 
         public double NotClosedInterval()
         {
@@ -106,59 +106,19 @@ namespace FootballStats
             return uniqScore.Any() ? uniqScore.Values.Sum() : 0.0;
         }
 
-        public void PrintIntervalResults()
-        {
-            if (IntervalResults == null)
-                return;
-            Console.WriteLine("\n* INTERVAL RESULTS TABLE *\n");
-            //headers
-            Console.WriteLine($"{"Goal Sequence", -20}\t{"Score", 5}\t{"Result", 10}\t{"Probability", 10}");
-            foreach (var item in IntervalResults) {
-                var sb = new StringBuilder();
-                foreach (var goal in item.GoalSequence) {
-                    var symbol = goal switch {
-                        1 => "H",
-                        0 => "A",
-                        _ => "*"
-                    };
-                    sb.Append(symbol);
-                    sb.Append(" - ");
-                }
-
-                string result;
-                if (item.GoalSequence.Contains(-1))
-                    result = "Not compl.";
-                else if (item.HomeScore > item.AwayScore)
-                    result = "Home Win";
-                else if (item.HomeScore < item.AwayScore)
-                    result = "Away Win";
-                else
-                    result = "Draw";
-
-                Console.WriteLine($"{sb}\t{item.HomeScore, 2}:{item.AwayScore, -2}\t{result, 10}\t {item.Probability:F5}");
-            }
-        }
-
         #region Help Methods
 
-        private (double, Dictionary<string, double>) GetProbSum(Func<int, int, bool> condition)
+        private double GetProbSum(Func<int, int, bool> condition)
         {
             var uniqScore = new List<(string, double)>();
-            var result = new Dictionary<string, double>();
             if (IntervalResults != null)
                 foreach (var item in IntervalResults.Where(x => !x.GoalSequence.Contains(-1))) {
                     var score = string.Join(':', new int[] { item.HomeScore - HomeFixedScore, item.AwayScore - AwayFixedScore });
-                    if ( /*!uniqScore.ContainsKey(score) && */condition(item.HomeIntervalScore, item.AwayIntervalScore)) {
+                    if (condition(item.HomeIntervalScore, item.AwayIntervalScore))
                         uniqScore.Add((score, item.Probability));
-                        if (result.ContainsKey(score))
-                            result[score] += item.Probability;
-                        else
-                            result.Add(score, item.Probability);
-                    }
+
                 }
-            uniqScore.Sort();
-            var sum = uniqScore.Any() ? uniqScore.Sum(x => x.Item2) : 0.0;
-            return (sum, result);
+            return uniqScore.Any() ? uniqScore.Sum(x => x.Item2) : 0.0;
         }
         public static List<List<int>> GetAllCombo(int length)
         {
@@ -206,7 +166,6 @@ namespace FootballStats
                 return false;
             
             var other = (IntervalResult)obj;
-            //return other.GoalSequence.Count == GoalSequence.Count && other.GoalSequence.SequenceEqual(GoalSequence);
             return other.FullSequence.Count == FullSequence.Count && other.GoalSequence.SequenceEqual(FullSequence);
         }
 

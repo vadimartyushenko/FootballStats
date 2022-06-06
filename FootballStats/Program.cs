@@ -68,40 +68,13 @@ if (results != null && maxGoals.HasValue && minGoals.HasValue)
 {
     results.Calc(minGoals, maxGoals, remainPart * stats.AverageHome, remainPart * stats.AverageAway);
     //SequenceFormatter.PrintAllResultsTable(results.AllResults);
-    //results.PrintIntervalResults();
 
     Console.WriteLine("\n* INTERVAL PROBABILITY *\n");
-    Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin().Item1:F5}");
-    Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin().Item1:F5}");
-    Console.WriteLine($"Draw interval probability = {results.IntervalDraw().Item1:F5}");
+    Console.WriteLine($"Home win interval probability = {results.HomeIntervalWin():F5}");
+    Console.WriteLine($"Away win interval probability = {results.AwayIntervalWin():F5}");
+    Console.WriteLine($"Draw interval probability = {results.IntervalDraw():F5}");
     Console.WriteLine($"Not closed interval probability = {results.NotClosedInterval():F5}");
-    Console.WriteLine($"Sum = {results.HomeIntervalWin().Item1 + results.AwayIntervalWin().Item1 + results.IntervalDraw().Item1 + results.NotClosedInterval():F5}");
-    /*var homeWinRes = results.HomeIntervalWin().Item2;
-    var awayWinRes = results.AwayIntervalWin().Item2;
-    var drawRes = results.IntervalDraw().Item2;
-    var allProbs = new Dictionary<string, double>();
-    foreach (var (score, prob) in homeWinRes)
-    {
-        if (!allProbs.ContainsKey(score))
-            allProbs.Add(score, prob);
-        else
-            allProbs[score] += prob;
-    }
-    foreach (var (score, prob) in awayWinRes) {
-        if (!allProbs.ContainsKey(score))
-            allProbs.Add(score, prob);
-        else
-            allProbs[score] += prob;
-    }
-    foreach (var (score, prob) in drawRes) {
-        if (!allProbs.ContainsKey(score))
-            allProbs.Add(score, prob);
-        else
-            allProbs[score] += prob;
-    }
-
-    foreach (var (score, prob) in allProbs)
-        Console.WriteLine($"For {score} - {prob:F5}");*/
+    Console.WriteLine($"Sum = {results.HomeIntervalWin() + results.AwayIntervalWin() + results.IntervalDraw() + results.NotClosedInterval():F5}");
 }
 
 Console.WriteLine("\n* ALL PROBABILITY MATRIX *\n");

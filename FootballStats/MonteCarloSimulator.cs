@@ -54,7 +54,7 @@
                 awayFixedScore = fixedResultArray[(min - 1)..].Count(x => x == 0);
             }
 
-            var needToCLose = max - min + 1 - (homeFixedScore + awayFixedScore);
+            var needToCLose = max - fixedResult.Count;
             var count = 0;
             var notClosedCount = 0;
 
@@ -76,7 +76,7 @@
                 var intervalSequence = test_sequence.Skip(min - 1).Take(max - min + 1).ToArray();
                 var homeIntervalScore = intervalSequence.Sum();
                 var awayIntervalScore = intervalSequence.Length - homeIntervalScore;
-                if (!condition(homeIntervalScore + homeFixedScore, awayIntervalScore + awayFixedScore)) 
+                if (!condition(homeIntervalScore, awayIntervalScore)) 
                     continue;
                 count++;
                 if (log) Console.WriteLine($"#{i}: Home {home_goals_scored + homeFixedScore}:{away_goals_scored + awayFixedScore} Away");
